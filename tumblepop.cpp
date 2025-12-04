@@ -327,13 +327,13 @@ bool isPlatformAbove(char **lvl, float player_x, float player_y, int Pwidth, int
 
 void playerFalling(bool &wasOnGround, bool &canMoveinAir, bool &isJumping, bool &onGround, int airborneFrames, bool &isFalling){
     
-    // Only lock controls if airborne for multiple frames (not just 1 frame flicker)
+
     if (!onGround && !isJumping && airborneFrames >= 2) {
         canMoveinAir = false;
 		isFalling = true;
     }
     
-    // Always have control when on ground or jumping
+    
     if (onGround || isJumping) {
         canMoveinAir = true;
     }
@@ -515,7 +515,7 @@ void vaccumPull(bool &vaccum, int &vaccumFrameCount, int &vaccumFrameDelay, int 
 				vaccum = true;
 }
 
-void rainbowShootHook(Sprite &RainbowSprite, float pipeX, float pipeY, float pipeRotation, bool facing_right, int vaccumPhase, float &rainbowHitboxX, float &rainbowHitboxY, float &rainbowHitboxWidth, float &rainbowHitboxHeight){
+void rainbowShootHook(Sprite &RainbowSprite, float pipeX, float pipeY, float pipeRotation, bool facing_right, int vaccumPhase, float &rainbowHitboxX, float &rainbowHitboxY, float &rainbowHitboxWidth, float &rainbowHitboxHeight, bool crouch){
 
 
 
@@ -541,7 +541,15 @@ void rainbowShootHook(Sprite &RainbowSprite, float pipeX, float pipeY, float pip
         if (facing_right) {
             rainbowX = pipeX + baseDistance + 13.0f; 
 			rainbowY = pipeY - 50.0f;
-        } else {
+
+			if(crouch){
+				rainbowY = rainbowY + 10.9f;			
+			
+			}
+
+        	} 
+		
+		else {
             rainbowX = pipeX - baseDistance - 10.f; 
 			rainbowY = pipeY - 50.0f;
         }
@@ -550,6 +558,11 @@ void rainbowShootHook(Sprite &RainbowSprite, float pipeX, float pipeY, float pip
         if (facing_right) {
             rainbowX = pipeX - baseDistance - 13.0f;
 			rainbowY = pipeY + 50.0f; 
+
+			
+			if (crouch){
+				rainbowY = rainbowY + 10.0f;
+			}
 	
 
         } else {
@@ -564,10 +577,11 @@ void rainbowShootHook(Sprite &RainbowSprite, float pipeX, float pipeY, float pip
 		if(facing_right){
 			rainbowX = pipeX - 52.0f;
 			rainbowY = pipeY - baseDistance - 15.0f;
+			
 		}
 		else{
 			rainbowX = pipeX - 55.0f; 
-			rainbowY = pipeY + baseDistance -15.0f; 
+			rainbowY = pipeY + baseDistance + 15.0f; 
 
 		}
     }
@@ -580,7 +594,7 @@ void rainbowShootHook(Sprite &RainbowSprite, float pipeX, float pipeY, float pip
 		}
 		else{
 			rainbowX = pipeX + 52.0f; 
-			rainbowY = pipeY - baseDistance - 14.0f; 
+			rainbowY = pipeY - baseDistance - 15.0f; 
 		}
 
 	
@@ -597,8 +611,8 @@ void rainbowShootHook(Sprite &RainbowSprite, float pipeX, float pipeY, float pip
         RainbowSprite.setScale(3, 3); 
     }
 
-	float baseWidth = 34.0f * 3.0f;  // sprite width * scale
-	float baseHeight = 33.0f * 3.0f; // sprite height * scale
+	float baseWidth = 34.0f * 3.0f;  
+	float baseHeight = 33.0f * 3.0f; 
 	
 	// For horizontal directions (0 or 180 degrees)
 	if (pipeRotation == 0 || pipeRotation == 180) {
@@ -643,6 +657,11 @@ int main()
 
 	int currentState = MENU_STATE;
 
+// ---------------------------------------- Level Number ----------------------------------------------
+
+	int level = 1; // default level is one
+
+// --------------------------------------- Rendering --------------------------------------------------
 
 	RenderWindow window(VideoMode(screen_x, screen_y), "Tumble-POP", Style::Resize);
 	window.setVerticalSyncEnabled(true);
@@ -675,11 +694,8 @@ int main()
 	
 	//Music initialisation
 	Music lvlMusic;
+	bool music = false;
 
-	lvlMusic.openFromFile("Data/mus.ogg");
-	lvlMusic.setVolume(10);
-	lvlMusic.play();
-	lvlMusic.setLoop(true);
 
 	//player data
 	float player_x = 200;
@@ -1023,6 +1039,8 @@ bool MKeyPressed = false;
 
 	}
 	
+// ------------------------------------- playing state ------------------------------------------------------
+
 	else if (currentState == PLAY_STATE){
 
 		if(currentPKey && !PKeyPressed){
@@ -1030,6 +1048,19 @@ bool MKeyPressed = false;
 		}
 
 		cout << "Current State: ";
+
+if (!music){
+	
+	if (level == 1){
+	
+		lvlMusic.openFromFile("Data/lvl1music.ogg");
+		lvlMusic.setVolume(10);
+		lvlMusic.play();
+		lvlMusic.setLoop(true);
+		music = true;
+	}
+}
+
 
 	// Handling speed logic:
 
@@ -1274,7 +1305,9 @@ bool MKeyPressed = false;
 				}
 				break;
 
+			// --- Yelow tumblepopper
 			case 2:
+
 				if(crouch){
 					PlayerSprite.setTexture(YellowCrouchTexture);
 					spriteToRender = &PlayerSprite;
@@ -1334,11 +1367,15 @@ bool MKeyPressed = false;
 				backpack.setPosition(player_x + 3.0f, player_y + PlayerWidth/2.0);
 			}
 	
+
+
 			VacuumSprite.setScale(-3,-3);
 	
 			float pipe_x = player_x + PlayerWidth / 2.0f + 20.f;
 			float pipe_y = player_y + PlayerHeight / 2.0f + 10.f;
 	
+// ------------------------------- Applying rotation of vacuum based on it's phase
+
 			if (vacuum_state == 0 || vacuum_state == 4){
 				VacuumSprite.setRotation(0);
 				VacuumSprite.setPosition(pipe_x, pipe_y);
@@ -1350,10 +1387,19 @@ bool MKeyPressed = false;
 			}
 			else if (vacuum_state == 1){
 				VacuumSprite.setRotation(-90);
-				VacuumSprite.setPosition(pipe_x - 15.f, pipe_y - 30.f);
+
+				if(crouch){  // <- for crouch it will be slightly up and down
+					VacuumSprite.setPosition(pipe_x - 15.f, pipe_y - 20.f);
+					vacuum_pipe_y = pipe_y - 20.f;
+					
+				}
+				else{
+					VacuumSprite.setPosition(pipe_x - 15.f, pipe_y - 30.f);
+					vacuum_pipe_y = pipe_y - 30.f;
+
+				}
 	
 				vacuum_pipe_x = pipe_x - 15.f;
-				vacuum_pipe_y = pipe_y - 30.f;
 				pipe_rotation = -90;
 				
 			}
@@ -1368,10 +1414,20 @@ bool MKeyPressed = false;
 			}
 			else if (vacuum_state == 2){
 				VacuumSprite.setRotation(180);
-				VacuumSprite.setPosition(pipe_x - 62.0f , pipe_y - 1.0f);
-	
+
+				if(crouch){
+					VacuumSprite.setPosition(pipe_x - 62.0f , pipe_y + 10.0f);
+					vacuum_pipe_y = pipe_y + 10.0f;
+
+
+				}
+				else{
+					VacuumSprite.setPosition(pipe_x - 62.0f , pipe_y - 1.0f);
+					vacuum_pipe_y = pipe_y - 1.0f;
+					
+				}
+				
 				vacuum_pipe_x = pipe_x - 62.0f;
-				vacuum_pipe_y = pipe_y - 1.0f;
 				pipe_rotation = 180;
 			}
 	
@@ -1450,7 +1506,7 @@ bool MKeyPressed = false;
 			float pipe_x = player_x + PlayerWidth / 2.0f - 24.f;
 			float pipe_y = player_y + PlayerHeight / 2.0f + 10.f;
 	
-			if (vacuum_state == 0 || vacuum_state == 2){
+			if ( vacuum_state == 0){
 				VacuumSprite.setRotation(0);
 				VacuumSprite.setPosition(pipe_x, pipe_y);
 	
@@ -1459,20 +1515,57 @@ bool MKeyPressed = false;
 				pipe_rotation = 0;
 	
 			}
+
+			else if (vacuum_state == 2){
+				VacuumSprite.setRotation(0);
+				
+				if(crouch){
+					VacuumSprite.setPosition(pipe_x, pipe_y + 10.f); // THis is to adjust for the crouch position
+					vacuum_pipe_y = pipe_y + 10.f;
+
+				}
+				else{
+					VacuumSprite.setPosition(pipe_x, pipe_y);
+					vacuum_pipe_y = pipe_y;
+
+				}
+	
+				vacuum_pipe_x = pipe_x;
+				pipe_rotation = 0;
+			}
+
 			else if (vacuum_state == 1){
 				VacuumSprite.setRotation(90);
-				VacuumSprite.setPosition(pipe_x + 20.f, pipe_y - 30.f);
+				
+				if (crouch){
+					VacuumSprite.setPosition(pipe_x + 20.f, pipe_y - 20.f);
+					vacuum_pipe_y = pipe_y - 20.f;
+					
+				}
+				else{
+					VacuumSprite.setPosition(pipe_x + 20.f, pipe_y - 30.f);
+					vacuum_pipe_y = pipe_y - 30.f;
+				
+				}
 				
 				vacuum_pipe_x = pipe_x + 20.f;
-				vacuum_pipe_y = pipe_y - 30.f;
 				pipe_rotation = 90;
+				
+
 			}
 			else if( vacuum_state == 3){
 				VacuumSprite.setRotation(-90);
-				VacuumSprite.setPosition(pipe_x + 25.f, pipe_y + 30.f);
+				if(crouch){
+					VacuumSprite.setPosition(pipe_x + 25.f, pipe_y + 40.f);
+					vacuum_pipe_y = pipe_y + 40.f;
+				}
+				else{
+					VacuumSprite.setPosition(pipe_x + 25.f, pipe_y + 30.f);
+					vacuum_pipe_y = pipe_y + 30.f;
+
+				}
 			
 				vacuum_pipe_x = pipe_x + 25.f;
-				vacuum_pipe_y = pipe_y + 30.f;
 				pipe_rotation = -90;
 			}
 			else if (vacuum_state == 4){
@@ -1510,7 +1603,7 @@ bool MKeyPressed = false;
 	
 	bool pipe_draw = true;
 	
-	if(facing_right && vacuum_state == 4){
+	if(facing_right && (vacuum_state == 0 || vacuum_state == 4)){
 		pipe_draw = false;
 	}
 	else if(!facing_right && (vacuum_state == 0 || vacuum_state == 2) ){
@@ -1521,7 +1614,7 @@ bool MKeyPressed = false;
 	// ------------------------ Shooting logic ------------------------
 		if(vaccum){
 	
-			rainbowShootHook(RainbowSprite, vacuum_pipe_x, vacuum_pipe_y, pipe_rotation, facing_right, vaccumPhase, rainbowHitboxX, rainbowHitboxY, rainbowHitboxWidth, rainbowHitboxHeight);
+			rainbowShootHook(RainbowSprite, vacuum_pipe_x, vacuum_pipe_y, pipe_rotation, facing_right, vaccumPhase, rainbowHitboxX, rainbowHitboxY, rainbowHitboxWidth, rainbowHitboxHeight, crouch);
 		    
 			RectangleShape rainbowHitboxRect(Vector2f(rainbowHitboxWidth, rainbowHitboxHeight));
 			rainbowHitboxRect.setFillColor(Color::Transparent);
